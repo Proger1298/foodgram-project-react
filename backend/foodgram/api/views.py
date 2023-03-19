@@ -1,47 +1,29 @@
 import io
-from rest_framework import status, viewsets, mixins
+
+from django.db.models import Sum
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import (
-    SAFE_METHODS,
-    AllowAny,
-    IsAuthenticated,
-) 
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from django.shortcuts import get_object_or_404
-from django.http import FileResponse
-from django.db.models import Sum
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import cm
 
-from api.permissions import IsCurrentUser, IsTokenValid, IsAuthorOrReadOnly
-from api.serializers import (
-    UserSerializer,
-    PasswordSerializer,
-    LoginSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-    IngredientSerializer,
-    GetRecipeSerializer,
-    PostRecipeSerializer,
-    SubscriptionRecipeSerializer
-)
-from recipes.models import (
-    Recipe,
-    Tag,
-    Ingredient,
-    RecipeFavorite,
-    ShoppingCart
-)
-from users.models import User, BlackListedToken, Subscription
-
-class PostDelete(
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
-    pass
+from api.permissions import IsAuthorOrReadOnly, IsCurrentUser, IsTokenValid
+from api.serializers import (GetRecipeSerializer, IngredientSerializer,
+                             LoginSerializer, PasswordSerializer,
+                             PostRecipeSerializer,
+                             SubscriptionRecipeSerializer,
+                             SubscriptionSerializer, TagSerializer,
+                             UserSerializer)
+from recipes.models import (Ingredient, Recipe, RecipeFavorite, ShoppingCart,
+                            Tag)
+from users.models import BlackListedToken, Subscription, User
 
 
 @api_view(['POST'])
@@ -55,11 +37,9 @@ def login(request):
     )
     auth_token = AccessToken.for_user(user)
     return Response(
-            {
-                'auth_token': f'{auth_token}'
-            },
-            status=status.HTTP_201_CREATED
-        )
+        {'auth_token': f'{auth_token}'},
+        status=status.HTTP_201_CREATED
+    )
 
 
 @api_view(['POST'])
@@ -73,7 +53,7 @@ def logout(request):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset=User.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny, )
 
@@ -106,6 +86,7 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
+
     @action(
         detail=True,
         methods=['post', 'delete'],
@@ -151,7 +132,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return GetRecipeSerializer
         return PostRecipeSerializer
-    
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
@@ -185,6 +166,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'errors': 'Вы уже удалили данный рецепт!'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
     @action(
         detail=True,
         methods=['post', 'delete'],
@@ -207,33 +189,41 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return self.include(ShoppingCart, request.user, pk)
         else:
             return self.exclude(ShoppingCart, request.user, pk)
-            
+
     @action(
         detail=False,
         methods=['get'],
         permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
         buffer = io.BytesIO()
-        pdf = canvas.Canvas(buffer, pagesize=letter, bottomup=0)
+        pdf = canvas.Canvas(buffer, pagesize=A4, bottomup=0)
+        pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
+        pdf.setFont('FreeSans', 24)
         text_obj = pdf.beginText()
-        text_obj.setTextOrigin(cm, cm)
-        text_obj.setFont('Helvetica', 16)
+        text_obj.setTextOrigin(15 * mm, 15 * mm)
         shopping_cart = Ingredient.objects.filter(
             recipe__recipe__in_carts__user=request.user
         ).values(
             'name',
             'measurement_unit'
         ).annotate(amount=Sum('recipe__amount')).order_by()
-        lines= []
+        lines = []
+        lines.append("--- Список покупок Foodgram ---")
+        lines.append("")
+        i = 1
         for ingredient in shopping_cart:
             name = ingredient.get('name')
             amount = ingredient.get('amount')
             measurement_unit = ingredient.get('measurement_unit')
             lines.append(
+                f'{i}) '
                 f'{name} - '
                 f'{amount}, '
                 f'{measurement_unit}'
             )
+            i += 1
+        lines.append("")
+        lines.append("--- Список покупок Foodgram ---")
         for line in lines:
             text_obj.textLine(line)
         pdf.drawText(text_obj)

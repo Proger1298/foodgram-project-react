@@ -1,6 +1,8 @@
-from django.db import models
 from django.core.validators import MinValueValidator
+from django.db import models
+
 from users.models import User
+
 
 class Ingredient(models.Model):
     name = models.CharField(
@@ -37,7 +39,7 @@ class Tag(models.Model):
         max_length=200,
         verbose_name='Уникальный slug'
     )
-    
+
     class Meta:
         ordering = ('id', )
         verbose_name = 'Тег'
@@ -45,7 +47,7 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
-    
+
 
 class Recipe(models.Model):
     author = models.ForeignKey(
@@ -59,11 +61,11 @@ class Recipe(models.Model):
         verbose_name='Название рецепта'
     )
     image = models.ImageField(
-        upload_to='recipes/images/', 
+        upload_to='recipes/images/',
         null=True,
-        blank=True, 
+        blank=True,
         default=None
-        )
+    )
     text = models.TextField(
         verbose_name='Описание рецепта',
     )
@@ -91,7 +93,7 @@ class Recipe(models.Model):
 
     def __str__(self):
         return f'{self.author.username}: {self.name}'
-    
+
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
