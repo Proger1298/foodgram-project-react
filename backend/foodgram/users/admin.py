@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from users.models import User, Subscription, BlackListedToken
+from users.models import BlackListedToken, Subscription, User
 
 
 @admin.register(User)

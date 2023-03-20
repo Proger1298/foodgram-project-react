@@ -36,6 +36,8 @@ class BlackListedToken(models.Model):
     timestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = 'Заблокированный токен'
+        verbose_name_plural = 'Заблокированные токены'
         unique_together = ("token", "user")
 
 

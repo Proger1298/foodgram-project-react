@@ -85,9 +85,13 @@ class Recipe(models.Model):
         verbose_name='Время приготовления',
         validators=[MinValueValidator(1)]
     )
+    pub_date = models.DateTimeField(
+        verbose_name='Дата публикации',
+        auto_now_add=True
+    )
 
     class Meta:
-        ordering = ('name', )
+        ordering = ('-pub_date', )
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -163,8 +167,8 @@ class ShoppingCart(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
+        verbose_name = 'Рецепт в корзине'
+        verbose_name_plural = 'Рецепты в корзинах'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],

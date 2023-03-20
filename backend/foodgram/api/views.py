@@ -3,6 +3,7 @@ import io
 from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
@@ -14,6 +15,7 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
+from api.filters import IngredientFilter, RecipeFilter
 from api.permissions import IsAuthorOrReadOnly, IsCurrentUser, IsTokenValid
 from api.serializers import (GetRecipeSerializer, IngredientSerializer,
                              LoginSerializer, PasswordSerializer,
@@ -127,6 +129,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         IsAuthorOrReadOnly,
         IsTokenValid
     )
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -243,3 +247,5 @@ class TagViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = IngredientFilter
