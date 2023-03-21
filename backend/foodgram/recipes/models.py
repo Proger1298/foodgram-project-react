@@ -5,8 +5,8 @@ from users.models import User
 
 MIN_COOKING_TIME = 1  # Минимальное время приготовления рецепта в минутах
 MAX_COOKING_TIME = 600  # Максимальное время приготовления рецепта в минутах
-MIN_INGREDIENTS_AMOUNT = 1  # Минимальное количество ингридиентов для рецепта
-MAX_INGREDIENTS_AMOUNT = 2000  # Максимальное количество ингридиентов для рецепта
+MIN_INGREDIENTS_AMOUNT = 1  # Минимальное количество ингридиентов в рецепте
+MAX_INGREDIENTS_AMOUNT = 2000  # Максимальное количество ингридиентов в рецепте
 
 
 class Ingredient(models.Model):

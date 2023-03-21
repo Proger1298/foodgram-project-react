@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.filters import IngredientFilter, RecipeFilter
+from api.pagination import PageLimitPagination
 from api.permissions import IsAuthorOrReadOnly, IsCurrentUser, IsTokenValid
 from api.serializers import (GetRecipeSerializer, IngredientSerializer,
                              LoginSerializer, PasswordSerializer,
@@ -60,6 +61,7 @@ def logout(request):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = PageLimitPagination
     permission_classes = (AllowAny, )
 
     @action(
@@ -125,6 +127,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.select_related('author')
+    pagination_class = PageLimitPagination
     permission_classes = (
         IsAuthorOrReadOnly,
         IsTokenValid
