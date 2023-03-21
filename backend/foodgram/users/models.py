@@ -21,9 +21,12 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('-id',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return self.username
 
 
 class BlackListedToken(models.Model):
@@ -36,9 +39,13 @@ class BlackListedToken(models.Model):
     timestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ('-id',)
         verbose_name = 'Заблокированный токен'
         verbose_name_plural = 'Заблокированные токены'
         unique_together = ("token", "user")
+
+    def __str__(self):
+        return f'{self.user.username} - {self.token[:10]}'
 
 
 class Subscription(models.Model):
@@ -56,6 +63,7 @@ class Subscription(models.Model):
     )
 
     class Meta:
+        ordering = ('-id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подпсики'
         constraints = [
@@ -64,3 +72,6 @@ class Subscription(models.Model):
                 name='unique_subscription'
             )
         ]
+
+    def __str__(self):
+        return f'{self.user.username} - {self.author.username}'

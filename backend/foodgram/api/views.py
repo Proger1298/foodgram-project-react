@@ -27,6 +27,9 @@ from recipes.models import (Ingredient, Recipe, RecipeFavorite, ShoppingCart,
                             Tag)
 from users.models import BlackListedToken, Subscription, User
 
+FONT_SIZE = 24  # Размер шрифта для пдф в пунктах
+TEXT_INDENT = 15  # Отступ для текста для пдф, в миллиметрах
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -81,13 +84,10 @@ class UserViewSet(viewsets.ModelViewSet):
             data=request.data,
             context={'request': request}
         )
-        if serializer.is_valid():
-            user.set_password(serializer.validated_data.get('new_password'))
-            user.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user.set_password(serializer.validated_data.get('new_password'))
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,
@@ -180,8 +180,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         print(self.request.method)
         if self.request.method == 'POST':
             return self.include(RecipeFavorite, request.user, pk)
-        else:
-            return self.exclude(RecipeFavorite, request.user, pk)
+        return self.exclude(RecipeFavorite, request.user, pk)
 
     @action(
         detail=True,
@@ -191,8 +190,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk):
         if self.request.method == 'POST':
             return self.include(ShoppingCart, request.user, pk)
-        else:
-            return self.exclude(ShoppingCart, request.user, pk)
+        return self.exclude(ShoppingCart, request.user, pk)
 
     @action(
         detail=False,
@@ -202,9 +200,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         buffer = io.BytesIO()
         pdf = canvas.Canvas(buffer, pagesize=A4, bottomup=0)
         pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
-        pdf.setFont('FreeSans', 24)
+        pdf.setFont('FreeSans', FONT_SIZE)
         text_obj = pdf.beginText()
-        text_obj.setTextOrigin(15 * mm, 15 * mm)
+        text_obj.setTextOrigin(TEXT_INDENT * mm, TEXT_INDENT * mm)
         shopping_cart = Ingredient.objects.filter(
             recipe__recipe__in_carts__user=request.user
         ).values(
@@ -214,18 +212,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
         lines = []
         lines.append("--- Список покупок Foodgram ---")
         lines.append("")
-        i = 1
+        ingredient_number = 1
         for ingredient in shopping_cart:
             name = ingredient.get('name')
             amount = ingredient.get('amount')
             measurement_unit = ingredient.get('measurement_unit')
             lines.append(
-                f'{i}) '
+                f'{ingredient_number}) '
                 f'{name} - '
                 f'{amount}, '
                 f'{measurement_unit}'
             )
-            i += 1
+            ingredient_number += 1
         lines.append("")
         lines.append("--- Список покупок Foodgram ---")
         for line in lines:

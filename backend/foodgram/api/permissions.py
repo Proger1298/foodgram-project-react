@@ -21,11 +21,11 @@ class IsTokenValid(permissions.BasePermission):
         is_allowed_user = True
         token = request.auth
         try:
-            is_blackListed = BlackListedToken.objects.get(
+            is_black_listed = BlackListedToken.objects.get(
                 user=user_id,
                 token=token
             )
-            if is_blackListed:
+            if is_black_listed:
                 is_allowed_user = False
         except BlackListedToken.DoesNotExist:
             is_allowed_user = True

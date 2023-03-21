@@ -228,7 +228,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
                   'name', 'image', 'text', 'cooking_time')
 
     def validate_tags(self, tags):
-        current_tags = []
+        current_tags = set()
         for tag in tags:
             if not Tag.objects.filter(id=tag.id).exists():
                 raise serializers.ValidationError(
@@ -238,7 +238,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Теги повторяются! Измените теги.'
                 )
-            current_tags.append(tag)
+            current_tags.add(tag)
         return tags
 
     def validate_ingredients(self, ingredients):
@@ -246,7 +246,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Без ингредиентов ничего не приготовишь :('
             )
-        current_ingredients_ids = []
+        current_ingredients_ids = set()
         for ingredient in ingredients:
             ingredient_id = ingredient.get('id')
             if not Ingredient.objects.filter(id=ingredient_id).exists():
@@ -262,7 +262,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Маловато будет на готовку! Измените кол-во ингредиента.'
                 )
-            current_ingredients_ids.append(ingredient_id)
+            current_ingredients_ids.add(ingredient_id)
         return ingredients
 
     def validate_cooking_time(self, cooking_time):
@@ -276,12 +276,14 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for ingredient in ingredients:
-            RecipeIngredient.objects.create(
+        RecipeIngredient.objects.bulk_create(
+            RecipeIngredient(
                 recipe=recipe,
                 ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount'),
+                amount=ingredient.get('amount')
             )
+            for ingredient in ingredients
+        )
         return recipe
 
     def update(self, instance, validated_data):
@@ -291,12 +293,14 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         instance.tags.clear()
         instance.tags.set(tags)
         instance.ingredients.clear()
-        for ingredient in ingredients:
-            RecipeIngredient.objects.create(
+        RecipeIngredient.objects.bulk_create(
+            RecipeIngredient(
                 recipe=instance,
                 ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount'),
+                amount=ingredient.get('amount')
             )
+            for ingredient in ingredients
+        )
         instance.save()
         return instance
 
