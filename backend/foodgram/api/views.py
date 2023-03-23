@@ -13,11 +13,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.authtoken.models import Token
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import PageLimitPagination
-from api.permissions import IsAuthorOrReadOnly, IsCurrentUser, IsTokenValid
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (GetRecipeSerializer, IngredientSerializer,
                              LoginSerializer, PasswordSerializer,
                              PostRecipeSerializer,
@@ -26,7 +26,7 @@ from api.serializers import (GetRecipeSerializer, IngredientSerializer,
                              UserSerializer)
 from recipes.models import (Ingredient, Recipe, RecipeFavorite, ShoppingCart,
                             Tag)
-from users.models import BlackListedToken, Subscription, User
+from users.models import Subscription, User
 
 FONT_SIZE = 24  # Размер шрифта для пдф в пунктах
 TEXT_INDENT = 15  # Отступ для текста для пдф, в миллиметрах
@@ -41,20 +41,17 @@ def login(request):
         User,
         email=serializer.validated_data.get('email')
     )
-    auth_token = AccessToken.for_user(user)
+    auth_token = Token.objects.get_or_create(user=user)[0]
     return Response(
-        {'auth_token': f'{auth_token}'},
+        {'auth_token': f'{str(auth_token.key)}'},
         status=status.HTTP_201_CREATED
     )
 
 
 @api_view(['POST'])
-@permission_classes([IsCurrentUser, IsTokenValid, ])
+@permission_classes([IsAuthenticated, ])
 def logout(request):
-    BlackListedToken.objects.create(
-        user=request.user,
-        token=request.auth
-    )
+    Token.objects.get(user=request.user).delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -67,7 +64,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def me(self, request):
         user = self.request.user
@@ -78,7 +75,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['post'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def set_password(self, request):
         user = self.request.user
@@ -94,7 +91,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def subscribe(self, request, pk):
         user = self.request.user
@@ -113,7 +110,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def subscriptions(self, request):
         subscriptions = Subscription.objects.filter(user=request.user)
@@ -128,10 +125,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.select_related('author')
     pagination_class = PageLimitPagination
-    permission_classes = (
-        IsAuthorOrReadOnly,
-        IsTokenValid
-    )
+    permission_classes = (IsAuthorOrReadOnly, )
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 
@@ -177,7 +171,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def favorite(self, request, pk):
         print(self.request.method)
@@ -188,7 +182,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        permission_classes=(IsAuthenticated, IsTokenValid)
+        permission_classes=(IsAuthenticated, )
     )
     def shopping_cart(self, request, pk):
         if self.request.method == 'POST':

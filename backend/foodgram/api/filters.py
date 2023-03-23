@@ -7,7 +7,7 @@ from users.models import User
 class RecipeFilter(django_filters.FilterSet):
     is_favorited = django_filters.BooleanFilter(
         label='В избранных',
-        method='filter_is_favotited'
+        method='filter_is_favorited'
     )
     author = django_filters.ModelChoiceFilter(
         queryset=User.objects.all()
@@ -30,7 +30,7 @@ class RecipeFilter(django_filters.FilterSet):
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
         if value and not user.is_anonymous:
-            return queryset.filter(is_favorited__user=user)
+            return queryset.filter(in_favorites__user=user)
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):

@@ -29,25 +29,6 @@ class User(AbstractUser):
         return self.username
 
 
-class BlackListedToken(models.Model):
-    token = models.CharField(max_length=512)
-    user = models.ForeignKey(
-        User,
-        related_name="token_user",
-        on_delete=models.CASCADE
-    )
-    timestamp = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ('-id',)
-        verbose_name = 'Заблокированный токен'
-        verbose_name_plural = 'Заблокированные токены'
-        unique_together = ("token", "user")
-
-    def __str__(self):
-        return f'{self.user.username} - {self.token[:10]}'
-
-
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
