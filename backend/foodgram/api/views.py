@@ -113,13 +113,14 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated, )
     )
     def subscriptions(self, request):
-        subscriptions = Subscription.objects.filter(user=request.user)
+        subscriptions = User.objects.filter(following__user=request.user)
+        paginated_subscriptions = self.paginate_queryset(subscriptions)
         serializer = SubscriptionSerializer(
-            subscriptions,
+            paginated_subscriptions,
             many=True,
             context={'request': request}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -237,10 +238,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = None
     filter_backends = (DjangoFilterBackend, )
     filterset_class = IngredientFilter
