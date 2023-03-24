@@ -5,14 +5,14 @@ from users.models import User
 
 
 class RecipeFilter(django_filters.FilterSet):
-    is_favorited = django_filters.BooleanFilter(
+    is_favorited = django_filters.NumberFilter(
         label='В избранных',
         method='filter_is_favorited'
     )
     author = django_filters.ModelChoiceFilter(
         queryset=User.objects.all()
     )
-    is_in_shopping_cart = django_filters.BooleanFilter(
+    is_in_shopping_cart = django_filters.NumberFilter(
         label='В списке покупок',
         method='filter_is_in_shopping_cart'
     )
